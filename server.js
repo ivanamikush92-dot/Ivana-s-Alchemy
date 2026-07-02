@@ -27,7 +27,56 @@ pool.query('SELECT NOW()', (err) => {
   }
 });
 
-// 🤖 Generate Report with Ollama
+// 🤖 Generate Horoscope with Ollama
+async function generateHoroscopeWithOllama(type = 'daily') {
+  const timeframes = {
+    daily: 'היום',
+    weekly: 'השבוע הנוכחי',
+    monthly: 'החודש הנוכחי'
+  };
+
+  const prompt = `
+אתה מעריך כוכבים ויוצר הורוסקופים מקצועיים ומעניינים בעברית.
+
+סוג הורוסקופ: ${timeframes[type]}
+תאריך: ${new Date().toLocaleDateString('he-IL')}
+
+כתוב הורוסקופ בעברית שמכיל:
+1. פתיחה כללית (משפט אחד חזק)
+2. תחזוקה רומנטית (משפט אחד)
+3. תחזוקה כלכלית (משפט אחד)
+4. תחזוקה בריאותית (משפט אחד)
+5. טיפ למזל (משפט אחד)
+6. מספר מזל (1-10)
+7. צבע מזל (צבע אחד)
+8. סיום מעוררי השראה (משפט אחד)
+
+סגנון: פרופסיונלי, אבל חם וחיובי.
+שימוש בעברית מושלמת.
+אורך: 4-5 פסקאות.
+`;
+
+  try {
+    console.log(`🔄 Generating ${type} horoscope...`);
+    
+    const response = await axios.post(`${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/api/generate`, {
+      model: process.env.OLLAMA_MODEL || 'mistral',
+      prompt: prompt,
+      stream: false,
+      temperature: 0.8,
+      top_p: 0.95,
+      top_k: 50
+    });
+
+    console.log(`✅ ${type.toUpperCase()} horoscope generated`);
+    return response.data.response;
+  } catch (error) {
+    console.error(`❌ Error generating ${type} horoscope:`, error.message);
+    return null;
+  }
+}
+
+// 🤖 Generate Professional Reports with Ollama
 async function generateReportWithOllama(project) {
   const prompt = `
 אתה כותב דוחות מקצועיים ומעניינים על פרויקטים טכנולוגיים.
@@ -36,6 +85,7 @@ async function generateReportWithOllama(project) {
 תיאור: ${project.description}
 טכנולוגיות: ${project.technologies?.join(', ') || 'N/A'}
 GitHub: ${project.github_url || 'N/A'}
+Live: ${project.live_url || 'N/A'}
 
 כתוב דוח מקצועי בעברית שמכיל:
 1. פתיחה מושכת (משפט אחד חזק)
@@ -99,6 +149,88 @@ app.get('/api/reports', async (req, res) => {
   }
 });
 
+// Get horoscopes
+app.get('/api/horoscopes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM horoscopes
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching horoscopes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get horoscope by type
+app.get('/api/horoscope/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const result = await pool.query(`
+      SELECT * FROM horoscopes
+      WHERE type = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [type]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No horoscope found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching horoscope:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate horoscopes
+app.post('/api/generate-horoscopes', async (req, res) => {
+  try {
+    console.log('🧪 Starting horoscope generation...');
+    
+    const types = ['daily', 'weekly', 'monthly'];
+    const generatedHoroscopes = [];
+
+    for (let type of types) {
+      console.log(`\n📋 Processing ${type} horoscope...`);
+      
+      const content = await generateHoroscopeWithOllama(type);
+
+      if (content) {
+        try {
+          const horoscopeResult = await pool.query(
+            `INSERT INTO horoscopes (type, content, created_at)
+             VALUES ($1, $2, NOW())
+             RETURNING *`,
+            [type, content]
+          );
+
+          generatedHoroscopes.push(horoscopeResult.rows[0]);
+          console.log(`✅ ${type} horoscope saved`);
+        } catch (dbError) {
+          console.error(`❌ Error saving ${type} horoscope:`, dbError.message);
+        }
+      }
+
+      // Add delay to avoid overwhelming Ollama
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    console.log(`\n🎉 Generated ${generatedHoroscopes.length} horoscopes!`);
+    res.json({
+      success: true,
+      count: generatedHoroscopes.length,
+      horoscopes: generatedHoroscopes
+    });
+  } catch (error) {
+    console.error('Error in generate-horoscopes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Generate reports for all projects
 app.post('/api/generate-reports', async (req, res) => {
   try {
@@ -111,6 +243,14 @@ app.post('/api/generate-reports', async (req, res) => {
 
     const projects = projectsResult.rows;
     const generatedReports = [];
+
+    if (projects.length === 0) {
+      return res.json({
+        success: false,
+        count: 0,
+        message: 'No projects found in database'
+      });
+    }
 
     for (let project of projects) {
       console.log(`\n📋 Processing: ${project.name}`);
@@ -141,7 +281,7 @@ app.post('/api/generate-reports', async (req, res) => {
       }
 
       // Add delay to avoid overwhelming Ollama
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
     console.log(`\n🎉 Generated ${generatedReports.length} reports!`);
@@ -161,11 +301,15 @@ app.post('/api/projects', async (req, res) => {
   try {
     const { name, description, technologies, github_url, live_url, image_url } = req.body;
 
+    if (!name || !description) {
+      return res.status(400).json({ error: 'Name and description are required' });
+    }
+
     const result = await pool.query(
       `INSERT INTO projects (name, description, technologies, github_url, live_url, image_url, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [name, description, technologies, github_url, live_url, image_url, 'active']
+      [name, description, technologies || [], github_url || null, live_url || null, image_url || null, 'active']
     );
 
     res.status(201).json(result.rows[0]);
@@ -177,7 +321,12 @@ app.post('/api/projects', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    ollama: `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}`,
+    model: process.env.OLLAMA_MODEL || 'mistral'
+  });
 });
 
 // 404 handler
@@ -192,6 +341,8 @@ app.listen(PORT, () => {
 ║       🧪 IvanasAlchemy Server Running        ║
 ║              Port: ${PORT}                      ║
 ║         Environment: ${process.env.NODE_ENV || 'development'}               ║
+║    Ollama: ${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}
+║    Model: ${process.env.OLLAMA_MODEL || 'mistral'}
 ╚════════════════════════════════════════════════╝
   `);
 });
