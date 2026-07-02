@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧪 IvanasAlchemy - Professional Reports</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #667eea;
+      --secondary: #764ba2;
+      --success: #48bb78;
+      --danger: #f56565;
+      --light: #f7fafc;
+      --dark: #2d3748;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 50px;
+      animation: fadeIn 0.6s ease-in;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .button-group {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    button {
+      background: white;
+      color: var(--primary);
+      border: none;
+      padding: 14px 35px;
+      border-radius: 25px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      animation: slideUp 0.6s ease-in;
+    }
+
+    .report-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      border-top: 4px solid var(--primary);
+    }
+
+    .report-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .report-card h3 {
+      color: var(--secondary);
+      margin-bottom: 12px;
+      font-size: 1.4em;
+      line-height: 1.4;
+    }
+
+    .report-card .project-name {
+      background: var(--light);
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85em;
+      display: inline-block;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .report-card p {
+      line-height: 1.8;
+      color: var(--dark);
+      text-align: justify;
+      margin-bottom: 15px;
+    }
+
+    .report-card .meta {
+      font-size: 0.85em;
+      color: #718096;
+      border-top: 1px solid var(--light);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      color: white;
+      padding: 60px 20px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid white;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      color: white;
+      padding: 80px 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .empty-state h2 {
+      margin-bottom: 15px;
+      font-size: 1.8em;
+    }
+
+    .empty-state p {
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: var(--success);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      margin-top: 10px;
+    }
+
+    .error-message {
+      background: var(--danger);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .success-message {
+      background: var(--success);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      .reports-grid {
+        grid-template-columns: 1fr;
+      }
+
+      body {
+        padding: 20px 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧪 IvanasAlchemy</h1>
+      <p>Professional Project Reports Generator</p>
+    </header>
+
+    <div class="button-group">
+      <button id="generateBtn" onclick="generateReports()">🚀 Generate AI Reports</button>
+    </div>
+
+    <div id="message-container"></div>
+
+    <div id="reports-container" class="reports-grid">
+      <div class="empty-state">
+        <h2>📦 No Reports Yet</h2>
+        <p>Click the button above to generate professional AI-powered reports for all projects</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+
+    function showMessage(message, type = 'info') {
+      const container = document.getElementById('message-container');
+      const className = type === 'error' ? 'error-message' : type === 'success' ? 'success-message' : 'info-message';
+      container.innerHTML = `<div class="${className}">${message}</div>`;
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 5000);
+    }
+
+    async function generateReports() {
+      const btn = document.getElementById('generateBtn');
+      const container = document.getElementById('reports-container');
+
+      btn.disabled = true;
+      container.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 20px; font-size: 1.1em;">🧪 Generating professional reports...</p>
+          <p style="opacity: 0.8; margin-top: 10px;">This may take a few minutes depending on the number of projects</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch(`${API_URL}/generate-reports`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        showMessage(`✅ Successfully generated ${data.count} reports!`, 'success');
+        
+        // Load and display reports
+        await loadReports();
+      } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>❌ Error</h2>
+            <p>${error.message}</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Make sure:</p>
+            <p style="font-size: 0.9em;">1. Ollama is running (ollama serve)</p>
+            <p style="font-size: 0.9em;">2. Database is connected</p>
+            <p style="font-size: 0.9em;">3. All projects are in the database</p>
+          </div>
+        `;
+        showMessage(`Error: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadReports() {
+      try {
+        const response = await fetch(`${API_URL}/reports`);
+        if (!response.ok) throw new Error('Failed to fetch reports');
+
+        const reports = await response.json();
+        const container = document.getElementById('reports-container');
+
+        if (reports.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h2>📦 No Reports Available</h2>
+              <p>Generate reports to see them here</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = reports.map((report, index) => `
+          <div class="report-card" style="animation-delay: ${index * 0.1}s">
+            <div class="project-name">${report.project_name}</div>
+            <h3>${report.title}</h3>
+            <p>${report.content}</p>
+            <div class="meta">
+              <span>📅 ${new Date(report.generated_at).toLocaleDateString('he-IL')}</span>
+              <span class="status-badge">✨ AI Generated</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading reports:', error);
+        showMessage(`Error loading reports: ${error.message}`, 'error');
+      }
+    }
+
+    // Load reports on page load
+    loadReports();
+  </script>
+</body>
+</html>
